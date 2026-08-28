@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 
-const API_BASE = "";
+const API_BASE = "https://mpeb-license-api.onrender.com";
 
 function getDeviceId(){
   let id = localStorage.getItem("mpeb_install_id");

@@ -1,5 +1,10 @@
 # MPEB License System
 
+
+## Important bookmarklet configuration
+
+`receipt.js` uses the absolute Render API URL because the script runs inside the MPEB website origin. The API also enables CORS for the bookmarklet requests.
+
 ## What it includes
 
 - Render Web Service
