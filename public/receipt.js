@@ -97,8 +97,8 @@ function printReceipt(){
 
   const h=`
   <table style="width:100%;border-collapse:collapse;font-family:Arial;font-size:12px;">
-    <tr><td style="border:1px solid #000;padding:2px 5px;font-weight:bold;width:40%;">IVRS</td><td style="border:1px solid #000;padding:2px 5px;">${esc(i)}</td></tr>
-    <tr><td style="border:1px solid #000;padding:2px 5px;font-weight:bold;">Ref No.</td><td style="border:1px solid #000;padding:2px 5px;">${esc(p)}</td></tr>
+    <tr><td style="border:1px solid #000;padding:2px 5px;font-weight:bold;">Channel Id.</td><td style="border:1px solid #000;padding:2px 5px;">${esc(p)}</td></tr>
+    <tr><td style="border:1px solid #000;padding:2px 5px;font-weight:bold;width:40%;">Consumer IVRS</td><td style="border:1px solid #000;padding:2px 5px;">${esc(i)}</td></tr>
     <tr><td style="border:1px solid #000;padding:2px 5px;font-weight:bold;">Txn ID</td><td style="border:1px solid #000;padding:2px 5px;">${esc(t)}</td></tr>
     <tr><td style="border:1px solid #000;padding:2px 5px;font-weight:bold;">Name</td><td style="border:1px solid #000;padding:2px 5px;">${esc(n)}</td></tr>
     <tr><td style="border:1px solid #000;padding:2px 5px;font-weight:bold;">Month</td><td style="border:1px solid #000;padding:2px 5px;">${esc(m)}</td></tr>
