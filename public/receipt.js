@@ -105,7 +105,7 @@ function printReceipt(){
     <tr><td style="border:1px solid #000;padding:2px 5px;font-weight:bold;">Amount</td><td style="border:1px solid #000;padding:2px 5px;">${esc(a)}</td></tr>
     <tr><td style="border:1px solid #000;padding:2px 5px;font-weight:bold;">Date</td><td style="border:1px solid #000;padding:2px 5px;">${esc(tm)}</td></tr>
     <tr><td style="border:1px solid #000;padding:2px 5px;font-weight:bold;">Status</td><td style="border:1px solid #000;padding:2px 5px;color:green;">Success</td></tr>
-    <tr><td style="border:1px solid #000;padding:2px 5px;font-weight:bold;">KOSHTA COMPUTERS</td><td style="border:1px solid #000;padding:2px 5px;">Mo.6261728996</td></tr>
+    <!--tr><td style="border:1px solid #000;padding:2px 5px;font-weight:bold;">KOSHTA COMPUTERS</td><td style="border:1px solid #000;padding:2px 5px;">Mo.6261728996</td></tr-->
   </table>`;
 
   const w=window.open("","_blank","width=800,height=600");
