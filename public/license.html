@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MPEB License Activation</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f6f8;margin:0}
+.box{max-width:420px;margin:70px auto;background:#fff;padding:24px;border-radius:14px;box-shadow:0 5px 25px #0002}
+input{width:100%;box-sizing:border-box;padding:12px;border:1px solid #bbb;border-radius:8px;margin:8px 0 12px}
+button{width:100%;padding:12px;border:0;border-radius:8px;background:#1769e0;color:#fff;font-weight:bold}
+.msg{margin-top:14px;padding:10px;border-radius:8px;display:none}
+</style>
+</head>
+<body>
+<div class="box">
+<h2>MPEB Receipt License</h2>
+<p>Enter your license key to activate this system.</p>
+<input id="key" placeholder="MPEB-XXXX-XXXX-XXXX-XXXX-XXXX" autocomplete="off">
+<button onclick="activate()">Activate</button>
+<div id="msg" class="msg"></div>
+</div>
+<script>
+function getDeviceId(){
+  let id = localStorage.getItem("mpeb_install_id");
+  if(!id){
+    id = crypto.randomUUID ? crypto.randomUUID() :
+      "mpeb-"+Date.now()+"-"+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2);
+    localStorage.setItem("mpeb_install_id",id);
+  }
+  return id;
+}
+async function activate(){
+  const msg=document.getElementById("msg");
+  msg.style.display="block";
+  msg.textContent="Activating...";
+  try{
+    const r=await fetch("/api/activate",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({key:document.getElementById("key").value,device_id:getDeviceId()})
+    });
+    const d=await r.json();
+    if(!d.success) throw new Error(d.error||"Activation failed");
+    localStorage.setItem("mpeb_license_token",d.token);
+    msg.textContent="✓ License activated on this browser/system.";
+    msg.style.background="#e9f7ee";
+  }catch(e){
+    msg.textContent="✗ "+e.message;
+    msg.style.background="#ffe9e9";
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MPEB License Admin</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f6f8;margin:0;color:#111}
+.wrap{max-width:1050px;margin:30px auto;padding:0 16px}
+.card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 2px 8px #0000000d}
+h1{margin-top:0}
+button{padding:10px 14px;border:0;border-radius:8px;cursor:pointer;background:#1769e0;color:#fff}
+button.danger{background:#c62828}
+button.gray{background:#555}
+input{padding:10px;border:1px solid #bbb;border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid #eee;padding:9px;text-align:left}
+.badge{padding:4px 7px;border-radius:999px;background:#e9f7ee}
+.disabled{background:#ffe9e9}
+#newKey{font-size:18px;font-weight:bold;word-break:break-all;background:#f1f5ff;padding:12px;border-radius:8px}
+.small{color:#666;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="card">
+<h1>MPEB License Admin</h1>
+<p class="small">Generate and manage one-device licenses.</p>
+<label>Expiry (optional): <input id="expiry" type="date"></label>
+<button onclick="createKey()">Generate Key</button>
+<button class="gray" onclick="loadLicenses()">Refresh</button>
+</div>
+
+<div class="card" id="keyCard" style="display:none">
+<h3>New license key</h3>
+<div id="newKey"></div>
+<p class="small">Copy this key now. The database stores only a hash, so the full key is intentionally shown only at creation time.</p>
+</div>
+
+<div class="card">
+<h2>Licenses</h2>
+<div style="overflow:auto">
+<table>
+<thead><tr>
+<th>ID</th><th>Key</th><th>Status</th><th>Expiry</th>
+<th>Device</th><th>Activated</th><th>Actions</th>
+</tr></thead>
+<tbody id="rows"></tbody>
+</table>
+</div>
+</div>
+</div>
+
+<script>
+async function api(url, options={}) {
+  const r = await fetch(url, options);
+  const text = await r.text();
+  let data;
+  try { data = JSON.parse(text); } catch { throw new Error(text || "Request failed"); }
+  if (!r.ok || data.success === false) throw new Error(data.error || "Request failed");
+  return data;
+}
+
+async function createKey() {
+  try {
+    const expiry = document.getElementById("expiry").value;
+    const data = await api("/api/admin/licenses", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({expires_at: expiry || null})
+    });
+    document.getElementById("newKey").textContent = data.key;
+    document.getElementById("keyCard").style.display = "block";
+    await loadLicenses();
+  } catch(e) { alert(e.message); }
+}
+
+async function loadLicenses() {
+  try {
+    const data = await api("/api/admin/licenses");
+    const rows = document.getElementById("rows");
+    rows.innerHTML = "";
+    for (const x of data.licenses) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${x.id}</td>
+        <td>••••${x.key_hint}</td>
+        <td><span class="badge ${x.status==='disabled'?'disabled':''}">${x.status}</span></td>
+        <td>${x.expires_at ? new Date(x.expires_at).toLocaleDateString() : "Never"}</td>
+        <td>${x.device_hint || "Not activated"}</td>
+        <td>${x.activated_at ? new Date(x.activated_at).toLocaleString() : "-"}</td>
+        <td>
+          <button onclick="resetLicense(${x.id})">Reset Device</button>
+          <button class="${x.status==='active'?'danger':'gray'}" onclick="toggleStatus(${x.id},'${x.status}')">
+            ${x.status==='active'?'Disable':'Enable'}
+          </button>
+        </td>`;
+      rows.appendChild(tr);
+    }
+  } catch(e) { alert(e.message); }
+}
+
+async function resetLicense(id) {
+  if (!confirm("Reset this license's device binding?")) return;
+  try {
+    await api("/api/admin/licenses/"+id+"/reset", {method:"POST"});
+    await loadLicenses();
+  } catch(e) { alert(e.message); }
+}
+
+async function toggleStatus(id,status) {
+  try {
+    await api("/api/admin/licenses/"+id+"/status", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({status:status==="active"?"disabled":"active"})
+    });
+    await loadLicenses();
+  } catch(e) { alert(e.message); }
+}
+
+loadLicenses();
+</script>
+</body>
+</html>
