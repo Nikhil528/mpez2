@@ -37,3 +37,7 @@ RAZORPAY_KEY_SECRET
 
 ## Deploy
 Upload this folder to GitHub and create a Render Blueprint using render.yaml, then set the required secret environment variables.
+
+
+## Annual key payment modes
+Admin key generator now supports Annual (1 Year), with Cash or Online payment mode. Cash is manual/admin-generated; Online is for recorded online sales. Razorpay checkout remains available for the ₹499 purchase flow.

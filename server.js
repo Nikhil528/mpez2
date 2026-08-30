@@ -56,6 +56,7 @@ async function initDb(){
     customer_name TEXT,
     customer_email TEXT,
     customer_phone TEXT,
+    payment_mode TEXT NOT NULL DEFAULT 'online',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`);
   for(const sql of [
@@ -65,6 +66,7 @@ async function initDb(){
     `ALTER TABLE licenses ADD COLUMN IF NOT EXISTS customer_name TEXT`,
     `ALTER TABLE licenses ADD COLUMN IF NOT EXISTS customer_email TEXT`,
     `ALTER TABLE licenses ADD COLUMN IF NOT EXISTS customer_phone TEXT`,
+    `ALTER TABLE licenses ADD COLUMN IF NOT EXISTS payment_mode TEXT NOT NULL DEFAULT 'online'`,
     `CREATE UNIQUE INDEX IF NOT EXISTS licenses_payment_uidx ON licenses(razorpay_payment_id) WHERE razorpay_payment_id IS NOT NULL`,
     `CREATE INDEX IF NOT EXISTS licenses_device_idx ON licenses(device_hash)`,
     `CREATE TABLE IF NOT EXISTS payments(
@@ -171,16 +173,18 @@ app.post('/api/validate', async (req,res)=>{
 });
 
 app.get('/api/admin/licenses',requireAdmin,async(req,res)=>{
-  const r=await pool.query(`SELECT id,key_hint,type,status,expires_at,device_hint,activated_at,last_seen_at,razorpay_payment_id,razorpay_order_id,customer_name,customer_email,customer_phone,created_at FROM licenses ORDER BY id DESC LIMIT 2000`);
+  const r=await pool.query(`SELECT id,key_hint,type,status,expires_at,device_hint,activated_at,last_seen_at,razorpay_payment_id,razorpay_order_id,customer_name,customer_email,customer_phone,payment_mode,created_at FROM licenses ORDER BY id DESC LIMIT 2000`);
   res.json({success:true,licenses:r.rows});
 });
 app.post('/api/admin/licenses',requireAdmin,async(req,res)=>{
-  const type=req.body.type==='trial'?'trial':'lifetime';
+  const type=req.body.type==='trial'?'trial':(req.body.type==='annual'?'annual':'lifetime');
+  const paymentMode=req.body.payment_mode==='cash'?'cash':'online';
   let expiry=req.body.expires_at?new Date(req.body.expires_at):null;
   if(type==='trial'&&!expiry) expiry=new Date(Date.now()+86400000);
+  if(type==='annual'&&!expiry) expiry=new Date(Date.now()+365*86400000);
   if(expiry && Number.isNaN(expiry.getTime())) return res.status(400).json({success:false,error:'Invalid expiry date.'});
   const key=makeKey();
-  const r=await pool.query(`INSERT INTO licenses(key_hash,key_hint,type,status,expires_at) VALUES($1,$2,$3,'active',$4) RETURNING id,expires_at,created_at`,[sha(key),key.slice(-8),type,expiry]);
+  const r=await pool.query(`INSERT INTO licenses(key_hash,key_hint,type,status,expires_at,payment_mode) VALUES($1,$2,$3,'active',$4,$5) RETURNING id,expires_at,created_at,payment_mode`,[sha(key),key.slice(-8),type,expiry,paymentMode]);
   res.json({success:true,key,license:r.rows[0]});
 });
 app.post('/api/admin/licenses/:id/reset',requireAdmin,async(req,res)=>{
