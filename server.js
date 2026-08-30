@@ -23,6 +23,10 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const LICENSE_SECRET = process.env.LICENSE_SECRET;
 const RZ_KEY_ID = process.env.RAZORPAY_KEY_ID;
 const RZ_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+const ADMIN_SESSION_TTL=8*60*60;
+function cookieValue(req,name){ const c=req.headers.cookie||''; const m=c.match(new RegExp('(?:^|; )'+name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'=([^;]*)')); return m?decodeURIComponent(m[1]):''; }
+function sessionToken(){ const exp=Math.floor(Date.now()/1000)+ADMIN_SESSION_TTL; return `${exp}.${hmac('admin:'+exp)}`; }
+function validSession(t){ const [exp,sig]=String(t||'').split('.'); return /^\d+$/.test(exp)&&Number(exp)>Math.floor(Date.now()/1000)&&safeEqual(sig,hmac('admin:'+exp)); }
 
 if(!DATABASE_URL || !ADMIN_PASSWORD || !LICENSE_SECRET){
   console.error('Missing DATABASE_URL / ADMIN_PASSWORD / LICENSE_SECRET');
@@ -84,6 +88,7 @@ async function initDb(){
 }
 
 function requireAdmin(req,res,next){
+  if(validSession(cookieValue(req,'mpeb_admin_session'))) return next();
   const h=req.headers.authorization||'';
   if(!h.startsWith('Basic ')){ res.setHeader('WWW-Authenticate','Basic realm="MPEB License Admin"'); return res.status(401).send('Authentication required'); }
   const raw=Buffer.from(h.slice(6),'base64').toString('utf8');
@@ -172,6 +177,15 @@ app.post('/api/validate', async (req,res)=>{
   res.json({success:true,license:{id:lic.id,type:lic.type,expires_at:lic.expires_at}});
 });
 
+app.post('/api/admin/login',(req,res)=>{
+  const u=String(req.body.username||''), p=String(req.body.password||'');
+  if(!safeEqual(u,ADMIN_USER)||!safeEqual(p,ADMIN_PASSWORD)) return res.status(401).json({success:false,error:'Invalid admin ID or password.'});
+  const token=sessionToken();
+  res.setHeader('Set-Cookie',`mpeb_admin_session=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${ADMIN_SESSION_TTL}`);
+  res.json({success:true});
+});
+app.post('/api/admin/logout',(req,res)=>{ res.setHeader('Set-Cookie','mpeb_admin_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'); res.json({success:true}); });
+
 app.get('/api/admin/licenses',requireAdmin,async(req,res)=>{
   const r=await pool.query(`SELECT id,key_hint,type,status,expires_at,device_hint,activated_at,last_seen_at,razorpay_payment_id,razorpay_order_id,customer_name,customer_email,customer_phone,payment_mode,created_at FROM licenses ORDER BY id DESC LIMIT 2000`);
   res.json({success:true,licenses:r.rows});
@@ -205,8 +219,8 @@ app.get('/api/admin/payments',requireAdmin,async(req,res)=>{
   res.json({success:true,payments:r.rows});
 });
 
-app.use(express.static(path.join(__dirname,'public'),{extensions:['html']}));
+app.use(express.static(path.join(__dirname,'public'),{extensions:false}));
 app.get('/license',(req,res)=>res.sendFile(path.join(__dirname,'public','license.html')));
-app.get('/admin',requireAdmin,(req,res)=>res.sendFile(path.join(__dirname,'public','admin.html')));
+app.get('/admin',(req,res)=>{ if(validSession(cookieValue(req,'mpeb_admin_session'))) return res.sendFile(path.join(__dirname,'public','admin.html')); res.sendFile(path.join(__dirname,'public','admin-login.html')); });
 
 initDb().then(()=>app.listen(PORT,'0.0.0.0',()=>console.log('MPEB License API listening on '+PORT))).catch(e=>{console.error(e);process.exit(1)});
