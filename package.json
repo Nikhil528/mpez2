@@ -1,17 +1,10 @@
 {
   "name": "mpeb-license-system",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "MPEB receipt bookmark license API and admin panel",
+  "description": "MPEB receipt bookmarklet with Render license API, admin and Razorpay",
   "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "engines": {
-    "node": ">=20"
-  },
-  "dependencies": {
-    "express": "^5.1.0",
-    "pg": "^8.16.3"
-  }
+  "scripts": {"start":"node server.js"},
+  "engines":{"node":">=20"},
+  "dependencies":{"express":"^5.1.0","pg":"^8.16.3","razorpay":"^2.9.6"}
 }
